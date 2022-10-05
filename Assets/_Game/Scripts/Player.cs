@@ -6,16 +6,26 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     [SerializeField] private LayerMask brickLayer;
-    [SerializeField] private Rigidbody rb;
-    [SerializeField] private float speed;
+    [SerializeField] private GameObject PlayerImage;
+    [SerializeField] private GameObject addBrickPrefab;
+    [SerializeField] private GameObject StackBrick;
+    [SerializeField] private float speed = 10;
 
-    private Vector3 currentDirect;
+    public int currentLevel;
+    public List<GameObject> list;
+    public Direct ECurDirect;
+
+    private Vector3 currentDirect, lastMovingPosition;
     private Vector2 startTouch, swipeDelta;
-    private Vector3 lastMovingPosition;
+    private bool isDraging, isMoving;
 
-    private bool isDraging=false,isMoving = false;
-
-    public Direct eCurrentDirect;
+    private void Start()
+    {
+        OnInit();
+        LevelManager.instance.LoadFirstLevel();
+        currentLevel = 1;
+        UIManager.instance.SetTextLevel(currentLevel);
+    }
 
     void Update()
     {
@@ -24,7 +34,7 @@ public class Player : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 startTouch = Input.mousePosition;
-                isDraging = true;
+                isDraging = true; // kiem tra dang keo
             }
             else if (Input.GetMouseButtonUp(0))
             {
@@ -32,7 +42,7 @@ public class Player : MonoBehaviour
                 Reset();
             }
 
-            // Calculate the distance
+            // tinh toan khoang cach
             swipeDelta = Vector2.zero;
             if (isDraging)
             {
@@ -44,34 +54,33 @@ public class Player : MonoBehaviour
 
             if (swipeDelta.magnitude > 125)
             {
-                float x = swipeDelta.x;
-                float y = swipeDelta.y;
+                float x = swipeDelta.x,
+                    y = swipeDelta.y;
                 if (Mathf.Abs(x) > Mathf.Abs(y))
                 {
-                    //left or right
+                    // left or right
                     if (x > 0)
                     {
-                        eCurrentDirect = Direct.Right;
+                        ECurDirect = Direct.Right;
                         currentDirect = Vector3.right;
                     }
                     else
                     {
-                        eCurrentDirect = Direct.Left;
+                        ECurDirect = Direct.Left;
                         currentDirect = Vector3.left;
-
                     }
                 }
                 else
                 {
-                    //up or down
+                    // up or down
                     if (y > 0)
                     {
-                        eCurrentDirect = Direct.Forward;
+                        ECurDirect = Direct.Forward;
                         currentDirect = Vector3.forward;
                     }
                     else
                     {
-                        eCurrentDirect = Direct.Back;
+                        ECurDirect = Direct.Back;
                         currentDirect = Vector3.back;
                     }
                 }
@@ -84,39 +93,106 @@ public class Player : MonoBehaviour
             Moving();
         }
     }
-
-    private void Moving()
+    
+    private void OnInit()
     {
-        transform.position = Vector3.MoveTowards(transform.position, lastMovingPosition, Time.deltaTime * speed);
-        if(Vector3.Distance(transform.position,lastMovingPosition) < 0.1f)
+        isMoving = false;
+        startTouch = swipeDelta = Vector2.zero;
+        isDraging = false;
+        setInitPoint();
+    }
+    private void ClearStackBrick()
+    {
+        for(int i = 0; i< list.Count; i++)
         {
-            isMoving = false;
+            Destroy(list[i]);
+        }
+        list.Clear();
+    }
+    public void PlayAgain()
+    {
+        LevelManager.instance.LoadLevel(currentLevel);
+        UIManager.instance.SetTextLevel(currentLevel);
+        PassLevel();
+    }
+    public void PassLevel()
+    {
+        PlayerImage.transform.localPosition = Vector3.zero;
+        ClearStackBrick();
+        OnInit();
+    }
+    public void setInitPoint()
+    {
+        transform.position = new Vector3(0, (float)0.83583498, 0);
+    }
+    // them gach
+    public void AddBrick()
+    {
+        PlayerImage.transform.position += new Vector3(0, (float)0.5, 0);
+        GameObject newBrick;
+        if (list.Count > 0)
+        {
+            newBrick = Instantiate(addBrickPrefab, list[list.Count - 1].transform.position + new Vector3(0, (float)0.5, 0)
+              , Quaternion.identity);
+        }
+        else
+        {
+            newBrick = Instantiate(addBrickPrefab, StackBrick.transform.position + new Vector3(0, (float)0.5, 0)
+             , Quaternion.identity);
+        }
+        newBrick.transform.SetParent(StackBrick.transform);
+        list.Add(newBrick);
+    }
+
+    // xoa gach
+    public void DeleteBrick()
+    {
+        if(list.Count > 0)
+        {
+            Destroy(list[list.Count - 1]);
+            list.Remove(list[list.Count - 1]);
+            PlayerImage.transform.position += new Vector3(0, (float)-0.5, 0);
         }
     }
 
+    internal void AddFirstBrick()
+    {
+        GameObject newBrick;
+        newBrick = Instantiate(addBrickPrefab, StackBrick.transform.position
+            , Quaternion.identity);
+        newBrick.transform.SetParent(StackBrick.transform);
+        list.Add(newBrick);
+    }
     private void Reset()
     {
         startTouch = swipeDelta = Vector2.zero;
         isDraging = false;
     }
-
     private void CheckFinalPosition(Vector3 dir)
     {
         int i = 1;
         isMoving = false;
-        while (Physics.Raycast(transform.position + dir * i, Vector3.down, 2f, brickLayer))
+        while (Physics.Raycast(transform.position + dir * i, Vector3.down, 5f, brickLayer))
         {
             i++;
             isMoving = true;
         }
         if (isMoving)
         {
-            lastMovingPosition = transform.position + dir * (i-1);
+            lastMovingPosition = transform.position + dir * (i - 1);
         }
         else
         {
             lastMovingPosition = transform.position;
         }
     }
-}
+    private void Moving()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, lastMovingPosition, Time.deltaTime * speed);
+        if (Vector3.Distance(transform.position, lastMovingPosition) < 0.03f)
+        {
+            isMoving = false;
+        }
+    }
 
+}

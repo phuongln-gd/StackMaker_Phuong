@@ -4,8 +4,9 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - Brick
   - MAST_Holder
+  - StartBrick
+  - FinishBrick
   layers:
   - Default
   - TransparentFX

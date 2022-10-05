@@ -4,14 +4,12 @@ using UnityEngine;
 
 public class Brick : MonoBehaviour
 {
-    [SerializeField] private GameObject addBrickPrefab;
-
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Player")
+        if (other.CompareTag("Player"))
         {
             gameObject.SetActive(false);
+            other.GetComponent<Player>().AddBrick();
         }
     }
-
 }

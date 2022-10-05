@@ -4,14 +4,17 @@ using UnityEngine;
 
 public class UnBrick : MonoBehaviour
 {
-    [SerializeField] GameObject cube1, cube2;
-    // Start is called before the first frame update
-    private void OnCollisionEnter(Collision collision)
+    [SerializeField] private GameObject cube1, cube2;
+    private void OnTriggerEnter(Collider other)
     {
-        if (collision.collider.tag == "Player")
+        if (other.tag == "Player")
         {
-            cube1.SetActive(false);
-            cube2.SetActive(true);
+            if (cube1.activeSelf == true)
+            {
+                cube1.SetActive(false);
+                cube2.SetActive(true);
+                other.GetComponent<Player>().DeleteBrick();
+            }
         }
     }
 }
